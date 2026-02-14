@@ -12,6 +12,9 @@ import java.util.Optional;
 public interface usuarioRepository extends CrudRepository<usuarios, Object> {
     Optional<usuarios> findByCorreo(String correo);
 
+    Optional<usuarios> findByCui(String cui);
+    boolean existsByCui(String cui);
+
     @Query(value = "select r.nombre from usuario_roles ur \n" +
             "inner join dbo.roles r on r.id_rol = ur.id_rol \n" +
             "where ur.id_usuario = :iduser", nativeQuery = true)

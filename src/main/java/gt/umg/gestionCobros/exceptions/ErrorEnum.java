@@ -54,8 +54,16 @@ public enum ErrorEnum {
     I_ERROR_EDIT_CONTADOR                   (4005, EstadoHttp.BAD_REQUEST, "El No. Contador y Cliente no se pueden editar al mismo tiempo"),
     I_ERROR_RUTA_CONTADOR                   (4005, EstadoHttp.BAD_REQUEST, "El No. Contador esta activo en la ruta: "),
     I_ERROR_USER_MASTER_APP                   (4006, EstadoHttp.BAD_REQUEST, "Error al crear el usuario Master"),
-    I_ERROR_CREAR_MASTER_APP                   (4006, EstadoHttp.BAD_REQUEST, "Error al crear el Master App"),
-    I_ERROR_MASTER_APP                   (4006, EstadoHttp.NOT_FOUND, "Error al encontrar el Master App"),
+    C_CUI_DUPLICADO                         (6000, EstadoHttp.BAD_REQUEST, "Ya existe un usuario con el CUI/DPI proporcionado"),
+    C_CORREO_DUPLICADO                      (6001, EstadoHttp.BAD_REQUEST, "Ya existe un usuario con el correo proporcionado"),
+    C_USUARIO_NO_ENCONTRADO                 (6002, EstadoHttp.NOT_FOUND, "Usuario no encontrado"),
+
+    // Errores de Cobros
+    CO_MONTO_INVALIDO                       (7000, EstadoHttp.BAD_REQUEST, "El monto debe ser mayor a 0"),
+    CO_COBRO_NO_ENCONTRADO                  (7001, EstadoHttp.NOT_FOUND, "Cobro no encontrado"),
+    CO_ESTADO_INVALIDO                      (7003, EstadoHttp.BAD_REQUEST, "Estado de cobro inválido"),
+    CO_USUARIO_NO_EXISTE                    (7004, EstadoHttp.BAD_REQUEST, "El usuario asociado al cobro no existe"),
+
     ;
 
 //______________________________________________________________________________

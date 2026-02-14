@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import gt.umg.gestionCobros.repositories.usuarioRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import gt.umg.gestionCobros.exceptions.ErrorEnum;
 
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
@@ -30,11 +31,13 @@ public class usuarioSvcImpl {
         usuarios user;
         Timestamp fechaAhora = Timestamp.valueOf(LocalDateTime.now());
 
-        // Buscar si el correo ya existe
+        Optional<usuarios> usuarioPorCui = userRepo.findByCui(datos.getCui());
+        if (usuarioPorCui.isPresent()) {
+            throw new IllegalArgumentException(ErrorEnum.C_CUI_DUPLICADO.getDescripcion());
+        }
+
         Optional<usuarios> usuarioExistente = userRepo.findByCorreo(datos.getCorreo());
         if (!usuarioExistente.isPresent()) {
-            // Crear un nuevo usuario porque el correo no existe
-            System.out.println("Correo no encontrado. Creando un nuevo usuario...");
             Date fechaActual = new Date();
             String hashedPassword = passwordEncoder.encode(datos.getPassword());
 
@@ -46,23 +49,19 @@ public class usuarioSvcImpl {
             user.setFechaCreacion(fechaActual);
             user.setPassword(hashedPassword);
         } else {
-            // Actualizar el usuario existente
-            System.out.println("Usuario existente encontrado. Actualizando los datos...");
             user = usuarioExistente.get();
             user.setFechaModificacion(fechaAhora);
         }
 
-        // Guardar el usuario en la base de datos (crear o actualizar)
+        // Guardar usuario
         usuarios usuarioGuardado = userRepo.save(user);
         Long idUsuario = Long.valueOf(usuarioGuardado.getIdUsuario());
 
-        // Asignar el rol al usuario
+        // Asignar rol
         roles.assignRoleToUser(idUsuario, datos.getRol());
 
-        // Retornar el usuario guardado
         return usuarioGuardado;
     }
-
 
     public List<usuariosProjection> listaUser() {
         return userRepo.showUsers();

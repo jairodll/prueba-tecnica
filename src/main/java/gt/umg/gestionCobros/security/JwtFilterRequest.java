@@ -1,11 +1,10 @@
 package gt.umg.gestionCobros.security;
 
-import gt.umg.gestionCobros.exceptions.ErrorEnum;
-import gt.umg.gestionCobros.exceptions.MSRinconException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,53 +13,67 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 public class JwtFilterRequest extends OncePerRequestFilter {
 
-    private final JWTUtil jwtUtil;
-    private final UsuarioDetailService usuarioDetailService;
+    @Autowired
+    private UsuarioDetailService usuarioDetailService;
 
-    public JwtFilterRequest(JWTUtil jwtUtil, UsuarioDetailService usuarioDetailService) {
-        this.jwtUtil = jwtUtil;
-        this.usuarioDetailService = usuarioDetailService;
-    }
+    @Autowired
+    private JWTUtil jwtUtil;
+
+    // Rutas públicas que no requieren JWT
+    private static final List<String> PUBLIC_URLS = Arrays.asList(
+            "/auth/",
+            "/usuarios/save",
+            "/swagger-ui/",
+            "/v3/api-docs/",
+            "/prueba/"
+    );
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        String authorizationHeader = request.getHeader("Authorization");
+        String requestPath = request.getRequestURI();
+
+        // Si es ruta pública, no procesar JWT
+        if (isPublicUrl(requestPath)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        final String authorizationHeader = request.getHeader("Authorization");
+        String username = null;
+        String jwt = null;
 
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            String token = authorizationHeader.substring(7); // Extraer el token después de "Bearer "
-
+            jwt = authorizationHeader.substring(7);
             try {
-                // Validar el token y obtener el username
-                String username = jwtUtil.extractUsername(token);
-
-                if (username != null && jwtUtil.isTokenValid(token, usuarioDetailService.loadUserByUsername(username))) {
-                    // Configurar la autenticación en el contexto de seguridad
-                    UserDetails userDetails = usuarioDetailService.loadUserByUsername(username);
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
+                username = jwtUtil.extractUsername(jwt);
             } catch (Exception e) {
-                // Manejo de errores de token
-                throw new MSRinconException(ErrorEnum.TOKEN_INVALIDO);
+                // Token inválido
             }
         }
 
-        // Continuar con el siguiente filtro
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = this.usuarioDetailService.loadUserByUsername(username);
+
+            if (jwtUtil.isTokenValid(jwt, userDetails)) {
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        }
+
         filterChain.doFilter(request, response);
     }
 
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        // Excluir rutas públicas como /auth/**
-        String path = request.getRequestURI();
-        return path.startsWith("/auth/") || path.startsWith("/v3/api-docs/") || path.startsWith("/swagger-ui/");
+    private boolean isPublicUrl(String requestPath) {
+        return PUBLIC_URLS.stream().anyMatch(requestPath::startsWith);
     }
 }
