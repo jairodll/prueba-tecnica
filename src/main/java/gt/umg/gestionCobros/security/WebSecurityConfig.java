@@ -45,7 +45,8 @@ public class WebSecurityConfig {
                                 "/usuarios/**",
                                 "/roles/**",
                                 "/productos/**",
-                                "/catalogos/**"
+                                "/catalogos/**",
+                                "/cobros/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
