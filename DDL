@@ -1,0 +1,142 @@
+-- DROP SCHEMA dbo;
+
+CREATE SCHEMA dbo;
+-- gestion_cobros.dbo.auditoria definition
+
+-- Drop table
+
+-- DROP TABLE gestion_cobros.dbo.auditoria;
+
+CREATE TABLE gestion_cobros.dbo.auditoria (
+	id_auditoria int IDENTITY(1,1) NOT NULL,
+	evento varchar(100) COLLATE Modern_Spanish_CI_AS NOT NULL,
+	resumen_payload text COLLATE Modern_Spanish_CI_AS NULL,
+	fecha datetime DEFAULT getdate() NOT NULL,
+	usuario_sistema varchar(100) COLLATE Modern_Spanish_CI_AS NULL,
+	entidad varchar(50) COLLATE Modern_Spanish_CI_AS NULL,
+	id_entidad int NULL,
+	CONSTRAINT PK_auditoria PRIMARY KEY (id_auditoria)
+);
+ CREATE NONCLUSTERED INDEX IX_auditoria_evento ON gestion_cobros.dbo.auditoria (  evento ASC  )  
+	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
+	 ON [PRIMARY ] ;
+ CREATE NONCLUSTERED INDEX IX_auditoria_fecha ON gestion_cobros.dbo.auditoria (  fecha ASC  )  
+	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
+	 ON [PRIMARY ] ;
+
+
+-- gestion_cobros.dbo.roles definition
+
+-- Drop table
+
+-- DROP TABLE gestion_cobros.dbo.roles;
+
+CREATE TABLE gestion_cobros.dbo.roles (
+	id_rol int IDENTITY(1,1) NOT NULL,
+	nombre varchar(50) COLLATE Modern_Spanish_CI_AS NOT NULL,
+	fecha_creacion date DEFAULT getdate() NULL,
+	fecha_modificacion date NULL,
+	CONSTRAINT PK__roles__6ABCB5E0376EC44D PRIMARY KEY (id_rol),
+	CONSTRAINT UQ__roles__72AFBCC6177D83A1 UNIQUE (nombre)
+);
+
+
+-- gestion_cobros.dbo.tipo_catalogos definition
+
+-- Drop table
+
+-- DROP TABLE gestion_cobros.dbo.tipo_catalogos;
+
+CREATE TABLE gestion_cobros.dbo.tipo_catalogos (
+	id_tipo_catalogo int IDENTITY(1,1) NOT NULL,
+	id_catalogo int NULL,
+	nombre varchar(50) COLLATE Modern_Spanish_CI_AS NOT NULL,
+	fecha_creacion date NULL,
+	fecha_modificacion date NULL,
+	CONSTRAINT PK__tipo_cat__ABE9201C751BECCA PRIMARY KEY (id_tipo_catalogo)
+);
+
+
+-- gestion_cobros.dbo.usuarios definition
+
+-- Drop table
+
+-- DROP TABLE gestion_cobros.dbo.usuarios;
+
+CREATE TABLE gestion_cobros.dbo.usuarios (
+	id_usuario int IDENTITY(1,1) NOT NULL,
+	cui varchar(20) COLLATE Modern_Spanish_CI_AS NOT NULL,
+	nombre varchar(50) COLLATE Modern_Spanish_CI_AS NOT NULL,
+	correo varchar(50) COLLATE Modern_Spanish_CI_AS NULL,
+	estado varchar(20) COLLATE Modern_Spanish_CI_AS NULL,
+	fecha_creacion date NULL,
+	fecha_modificacion date NULL,
+	password nvarchar(60) COLLATE Modern_Spanish_CI_AS NULL,
+	CONSTRAINT PK__usuarios__4E3E04ADB2A81FE0 PRIMARY KEY (id_usuario)
+);
+
+
+-- gestion_cobros.dbo.catalogos definition
+
+-- Drop table
+
+-- DROP TABLE gestion_cobros.dbo.catalogos;
+
+CREATE TABLE gestion_cobros.dbo.catalogos (
+	id_catalogo int IDENTITY(1,1) NOT NULL,
+	nombre_catalogo varchar(50) COLLATE Modern_Spanish_CI_AS NULL,
+	descripcion_catalogo text COLLATE Modern_Spanish_CI_AS NULL,
+	fecha_creacion date NULL,
+	estado varchar(20) COLLATE Modern_Spanish_CI_AS NULL,
+	fecha_modificacion date NULL,
+	id_tipo_catalogo int NULL,
+	CONSTRAINT PK__catalogo__4B673DCAB9A5B5C4 PRIMARY KEY (id_catalogo),
+	CONSTRAINT FK_Catalogo_TipoCatalogo FOREIGN KEY (id_tipo_catalogo) REFERENCES gestion_cobros.dbo.tipo_catalogos(id_tipo_catalogo)
+);
+
+
+-- gestion_cobros.dbo.cobros definition
+
+-- Drop table
+
+-- DROP TABLE gestion_cobros.dbo.cobros;
+
+CREATE TABLE gestion_cobros.dbo.cobros (
+	id_cobro int IDENTITY(1,1) NOT NULL,
+	id_usuario int NOT NULL,
+	monto decimal(10,2) NOT NULL,
+	moneda varchar(3) COLLATE Modern_Spanish_CI_AS DEFAULT 'GTQ' NOT NULL,
+	estado varchar(20) COLLATE Modern_Spanish_CI_AS DEFAULT 'PENDIENTE' NOT NULL,
+	fecha_creacion datetime DEFAULT getdate() NOT NULL,
+	fecha_proceso datetime NULL,
+	referencia_externa varchar(100) COLLATE Modern_Spanish_CI_AS NULL,
+	descripcion varchar(255) COLLATE Modern_Spanish_CI_AS NULL,
+	CONSTRAINT PK_cobros PRIMARY KEY (id_cobro),
+	CONSTRAINT FK_cobros_usuarios FOREIGN KEY (id_usuario) REFERENCES gestion_cobros.dbo.usuarios(id_usuario)
+);
+ CREATE NONCLUSTERED INDEX IX_cobros_estado ON gestion_cobros.dbo.cobros (  estado ASC  )  
+	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
+	 ON [PRIMARY ] ;
+ CREATE NONCLUSTERED INDEX IX_cobros_fecha_creacion ON gestion_cobros.dbo.cobros (  fecha_creacion ASC  )  
+	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
+	 ON [PRIMARY ] ;
+ CREATE NONCLUSTERED INDEX IX_cobros_usuario ON gestion_cobros.dbo.cobros (  id_usuario ASC  )  
+	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
+	 ON [PRIMARY ] ;
+ALTER TABLE gestion_cobros.dbo.cobros WITH NOCHECK ADD CONSTRAINT CHK_cobros_monto CHECK (([monto]>(0)));
+ALTER TABLE gestion_cobros.dbo.cobros WITH NOCHECK ADD CONSTRAINT CHK_cobros_estado CHECK (([estado]='FALLIDO' OR [estado]='PROCESADO' OR [estado]='PENDIENTE'));
+
+
+-- gestion_cobros.dbo.usuario_roles definition
+
+-- Drop table
+
+-- DROP TABLE gestion_cobros.dbo.usuario_roles;
+
+CREATE TABLE gestion_cobros.dbo.usuario_roles (
+	id_usuario int NOT NULL,
+	id_rol int NOT NULL,
+	CONSTRAINT PK__usuario___5895CFF31D963FFD PRIMARY KEY (id_usuario,id_rol),
+	CONSTRAINT FK__usuario_r__id_ro__07C12930 FOREIGN KEY (id_rol) REFERENCES gestion_cobros.dbo.roles(id_rol) ON DELETE CASCADE,
+	CONSTRAINT FK__usuario_r__id_us__06CD04F7 FOREIGN KEY (id_usuario) REFERENCES gestion_cobros.dbo.usuarios(id_usuario) ON DELETE CASCADE
+);
