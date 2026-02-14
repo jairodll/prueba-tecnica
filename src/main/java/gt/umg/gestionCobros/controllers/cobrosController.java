@@ -52,14 +52,14 @@ public class cobrosController {
         return ResponseEntity.ok(lista);
     }
 
-    @GetMapping("/usuario/{idUsuario}/filtros")
-    public ResponseEntity<List<cobros>> consultarCobrosPorUsuario(
-            @PathVariable Integer idUsuario,
+    @GetMapping("/usuario/{id}/cobros")
+    public ResponseEntity<List<cobros>> consultarCobrosPorCliente(
+            @PathVariable Integer id,
             @RequestParam(required = false) String estado,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date desde,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date hasta
     ) {
-        List<cobros> lista = cobroService.consultarCobrosPorUsuario(idUsuario, estado, desde, hasta);
+        List<cobros> lista = cobroService.consultarCobrosPorUsuario(id, estado, desde, hasta);
         return ResponseEntity.ok(lista);
     }
 
