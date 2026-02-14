@@ -1,5 +1,6 @@
 package gt.umg.gestionCobros.controllers;
 import gt.umg.gestionCobros.dtos.cobrodto;
+import gt.umg.gestionCobros.dtos.loteCobrodto;
 import gt.umg.gestionCobros.models.cobros;
 import gt.umg.gestionCobros.services.cobroSvcImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -60,5 +61,10 @@ public class cobrosController {
     ) {
         List<cobros> lista = cobroService.consultarCobrosPorUsuario(idUsuario, estado, desde, hasta);
         return ResponseEntity.ok(lista);
+    }
+
+    @PostMapping("/lotes/procesar")
+    public ResponseEntity<?> procesarLote(@RequestBody loteCobrodto data) {
+        return ResponseEntity.ok(cobroService.procesarLote(data));
     }
 }

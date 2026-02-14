@@ -1,6 +1,9 @@
 package gt.umg.gestionCobros.services;
 
 import gt.umg.gestionCobros.dtos.cobrodto;
+import gt.umg.gestionCobros.dtos.loteCobroResponsedto;
+import gt.umg.gestionCobros.dtos.loteCobrodto;
+import gt.umg.gestionCobros.dtos.resultadoCobrodto;
 import gt.umg.gestionCobros.exceptions.ErrorEnum;
 import gt.umg.gestionCobros.models.cobros;
 import gt.umg.gestionCobros.models.usuarios;
@@ -11,10 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -156,5 +156,107 @@ public class cobroSvcImpl {
                 .orElseThrow(() -> new IllegalArgumentException(ErrorEnum.C_USUARIO_NO_ENCONTRADO.getDescripcion()));
 
         return cobroRepo.findByUsuarioWithFilters(idUsuario, estado, desde, hasta);
+    }
+
+    /**
+     * Procesar lote de cobros
+     */
+    public loteCobroResponsedto procesarLote(loteCobrodto request) {
+        log.info("Procesando lote de {} cobros", request.getIdsCobros().size());
+
+        int totalProcesados = 0;
+        int totalFallidos = 0;
+        int totalPendientes = 0;
+        List<resultadoCobrodto> resultados = new ArrayList<>();
+
+        for (Integer idCobro : request.getIdsCobros()) {
+            try {
+                Optional<cobros> cobroOpt = cobroRepo.findById(idCobro);
+
+                if (!cobroOpt.isPresent()) {
+                    resultados.add(new resultadoCobrodto(
+                            idCobro,
+                            "DESCONOCIDO",
+                            "ERROR",
+                            "Cobro no encontrado"
+                    ));
+                    totalPendientes++;
+                    continue;
+                }
+
+                cobros cobro = cobroOpt.get();
+                String estadoAnterior = cobro.getEstado();
+
+                // IDEMPOTENCIA: Si ya fue procesado, no hacer nada
+                if (!"PENDIENTE".equals(estadoAnterior)) {
+                    resultados.add(new resultadoCobrodto(
+                            idCobro,
+                            estadoAnterior,
+                            estadoAnterior,
+                            "Cobro ya procesado anteriormente"
+                    ));
+
+                    // Contar en su categoría correspondiente
+                    if ("PROCESADO".equals(estadoAnterior)) {
+                        totalProcesados++;
+                    } else if ("FALLIDO".equals(estadoAnterior)) {
+                        totalFallidos++;
+                    }
+                    continue;
+                }
+
+                // Procesar el cobro
+                cobros cobroProcesado = procesarCobro(idCobro);
+
+                // Contar según el resultado
+                if ("PROCESADO".equals(cobroProcesado.getEstado())) {
+                    totalProcesados++;
+                } else if ("FALLIDO".equals(cobroProcesado.getEstado())) {
+                    totalFallidos++;
+                } else {
+                    totalPendientes++;
+                }
+
+                resultados.add(new resultadoCobrodto(
+                        idCobro,
+                        estadoAnterior,
+                        cobroProcesado.getEstado(),
+                        "Procesado exitosamente"
+                ));
+
+            } catch (Exception e) {
+                log.error("Error procesando cobro {}: {}", idCobro, e.getMessage());
+                resultados.add(new resultadoCobrodto(
+                        idCobro,
+                        "ERROR",
+                        "ERROR",
+                        "Error: " + e.getMessage()
+                ));
+                totalPendientes++;
+            }
+        }
+
+        loteCobroResponsedto response = new loteCobroResponsedto(
+                request.getIdsCobros().size(),
+                totalProcesados,
+                totalFallidos,
+                totalPendientes,
+                resultados
+        );
+
+        // Registrar en auditoría
+        auditoriaService.registrar(
+                "LOTE_PROCESADO",
+                String.format("Lote procesado: %d total, %d procesados, %d fallidos, %d pendientes",
+                        response.getTotal(), response.getProcesados(), response.getFallidos(), response.getPendientes()),
+                "LOTE_COBROS",
+                null,
+                "SYSTEM"
+        );
+
+        log.info("Lote procesado: {} procesados, {} fallidos, {} pendientes",
+                totalProcesados, totalFallidos, totalPendientes);
+
+        return response;
     }
 }
